@@ -2,7 +2,7 @@
   <div class="container">
     <header class="search-header">
       <!-- 検索欄 -->
-      <input type="text">
+      <SearchBar/>
     </header>
     <div class="main-content">
       <aside class="sidebar">
