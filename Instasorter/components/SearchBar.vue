@@ -6,11 +6,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits} from 'vue'
+import { ref } from 'vue';
 
-const username = ref('');
-const emit = defineEmits(['search'])
+const username = ref("");
+//異なるコンポーネント間で状態を共有できる
+const searchedUsername = useState("username", () => "");
 const userSearch = () => {
-  emit('search', username.value);
+  //入力されたユーザー名を共有ステートにセット
+  searchedUsername.value = username.value;
 };
 </script>
