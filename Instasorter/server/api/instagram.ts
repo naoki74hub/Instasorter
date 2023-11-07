@@ -2,7 +2,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const username = body.username;
   const after = body.after;
-
   //環境変数からアクセストークンとアカウントIDを取得
   const config = useRuntimeConfig()
   const baseUrl = config.privateRuntimeConfig.baseUrl
