@@ -1,26 +1,70 @@
 <template>
-  <div class="user-posts" v-if="userData !== null">
-    <div class="user-post" v-for="(post, index) in userData.business_discovery.media.data" :key="post.id">
-      <img :src="post.media_url" alt="Post Image" class="post-image" />
-      <div class="post-caption">{{ post.caption }}</div>
-      <a :href="post.permalink" class="post-link">View on Instagram</a>
+  <div>
+    <!-- ローディング状態の表示 -->
+    <p v-if="pending">データを取得中です...</p>
+
+    <!-- userDataが存在する場合にユーザー情報と投稿を表示 -->
+    <div v-else-if="userData">
+      <!-- ユーザープロフィール -->
+      <div class="user-profile">
+        <img :src="userData.profile_picture_url" alt="User Profile Picture" class="profile-picture">
+        <h2>{{ userData.username }}</h2>
+        <p>{{ userData.bio }}</p>
+        <a :href="`https://www.instagram.com/${userData.username}`" target="_blank" class="profile-link">プロフィールを見る</a>
+      </div>
+      
+      <!-- ユーザーの投稿リスト -->
+      <div class="user-posts">
+        <div class="user-post" v-for="post in userData.business_discovery.media.data" :key="post.id">
+          <img :src="post.media_url" alt="Post Image" class="post-image">
+          <p class="post-caption">{{ post.caption }}</p>
+          <a :href="post.permalink" target="_blank" class="post-link">投稿を見る</a>
+        </div>
+      </div>
     </div>
+
+    <!-- userDataが存在しない場合のメッセージ -->
+    <p v-else>ユーザーデータが見つかりません。</p>
   </div>
 </template>
+
 <script setup lang="ts">
+import type { InstagramBusinessUserData, MediaData } from "@/interfaces";
 //入力されたユーザー名を取得
 const searchedUsername = useState("username");
-const userData = ref<any>(null);
-const fetchUserData = async () => {
+const userData = ref<any>();
+const pending = ref(false);
+//次の投稿データを追跡
+let nextPostData = null;
+
+const fetchUserData = async (after: string = "") => {
+  pending.value = true;
   try {
-    const { data, pending } = await useFetch("/api/instagram", {
+    const { data: posts } = await useFetch<InstagramBusinessUserData>("/api/instagram", {
       method: "POST",
-      body: { username: searchedUsername.value }
+      body: { 
+              username: searchedUsername.value,
+              after: after 
+            }
     });
-    // 
-    userData.value = data.value;
+    if(!after) {
+      userData.value = posts.value;
+    } else {
+      const newMediaData = posts.value?.business_discovery.media.data as MediaData[]
+      //スプレッド構文を使用して、既存の配列に新しいデータの配列を1つずつプッシュ
+      userData.value.business_discovery.media.data.push(...newMediaData);
+    }
+    //afterCursorを更新
+    nextPostData = posts.value?.business_discovery.media.paging.cursors?.after;
+    
+    if(nextPostData !== null) {
+      //まだafterCursor(次の投稿データ)があれば、繰り返しリクエストする
+      fetchUserData(nextPostData);
+    }
   } catch (error) {
     console.log("Errorです", error);
+  } finally {
+    pending.value = false;
   }
 }
 // 検索されたユーザー名が変更されたときにデータをフェッチする
@@ -63,3 +107,4 @@ watch(searchedUsername, (newValue) => {
   color: #007bff;
 }
 </style>
+ 
