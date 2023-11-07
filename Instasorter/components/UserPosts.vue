@@ -31,35 +31,56 @@
 <script setup lang="ts">
 import type { InstagramBusinessUserData, MediaData } from "@/interfaces";
 //入力されたユーザー名を取得
-const searchedUsername = useState("username");
+const searchedUsername = useState<string>("username");
 const userData = ref<any>();
 const pending = ref(false);
 //次の投稿データを追跡
 let nextPostData = null;
 
-const fetchUserData = async (after: string = "") => {
+const fetchUserData = async (after: string | null = null) => {
   pending.value = true;
+
   try {
-    const { data: posts } = await useFetch<InstagramBusinessUserData>("/api/instagram", {
-      method: "POST",
-      body: { 
-              username: searchedUsername.value,
-              after: after 
-            }
+  //クエリパラメーター作成
+  const params: {
+    username: string;
+    after: string | null
+  } = 
+  {
+    username: searchedUsername.value,
+    after: after,
+  } 
+
+  const queryParams = new URLSearchParams();
+  queryParams.append("username", searchedUsername.value);
+  if(after !== null) {
+    queryParams.append("after", after);
+  }
+  const url = `/api/instagram?${queryParams.toString()}`
+ 
+    const { data: posts } = await useFetch<InstagramBusinessUserData>(url, {
+      method: "GET",
     });
+    
+    //afterがnullまたは空文字列の場合に、userDataを更新
     if(!after) {
+      console.log(posts.value);
       userData.value = posts.value;
+    //nullまたは空文字列ではないときに、既存のuserDataに投稿データを追加
     } else {
       const newMediaData = posts.value?.business_discovery.media.data as MediaData[]
       //スプレッド構文を使用して、既存の配列に新しいデータの配列を1つずつプッシュ
       userData.value.business_discovery.media.data.push(...newMediaData);
     }
     //afterCursorを更新
-    nextPostData = posts.value?.business_discovery.media.paging.cursors?.after;
+    nextPostData = posts.value?.business_discovery.media.paging.cursors.after as string | null;
     
     if(nextPostData !== null) {
       //まだafterCursor(次の投稿データ)があれば、繰り返しリクエストする
       fetchUserData(nextPostData);
+      console.log(`投稿数: ${userData.value.business_discovery.media.data.length}`);
+    } else {
+      console.log("次の投稿情報はありません。取得処理を終了します");
     }
   } catch (error) {
     console.log("Errorです", error);
@@ -68,7 +89,8 @@ const fetchUserData = async (after: string = "") => {
   }
 }
 // 検索されたユーザー名が変更されたときにデータをフェッチする
-watch(searchedUsername, (newValue) => {
+watch(searchedUsername, (newValue, oldValue) => {
+  if(newValue !== oldValue)
   console.log(`New search: ${newValue}`);
   fetchUserData();
 });
