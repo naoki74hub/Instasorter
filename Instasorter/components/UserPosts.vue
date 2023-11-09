@@ -22,6 +22,13 @@
               Sorry, your browser doesn't support embedded videos.
             </video>
           </template>
+          <template v-else-if="post.media_type === 'CAROUSEL_ALBUM'">
+            <swiper-container>
+              <swiper-slide v-for="child in post.children.data" :key="child.id">
+              <img :src="child.media_url" alt="Carousel image" class="carousel-image">
+            </swiper-slide>
+            </swiper-container>
+          </template>
           <template v-else>
             <img :src="post.media_url" alt="Post image" class="post-image">
           </template>
@@ -40,6 +47,8 @@
 
 <script setup lang="ts">
 import type { InstagramBusinessUserData, MediaData } from "@/interfaces";
+import { register } from "swiper/element/bundle";
+register();
 //入力されたユーザー名を取得
 const searchedUsername = useState<string>("username");
 const userData = ref<any>();
@@ -119,7 +128,7 @@ watch(searchedUsername, (newValue, oldValue) => {
   border-radius: 5px;
   box-sizing: border-box;
 }
-
+.carousel-image,
 .post-image,
 .post-video {
   max-width: 100%;
