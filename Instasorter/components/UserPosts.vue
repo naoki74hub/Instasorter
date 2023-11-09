@@ -16,8 +16,18 @@
       <!-- ユーザーの投稿リスト -->
       <div class="user-posts">
         <div class="user-post" v-for="post in userData.business_discovery.media.data" :key="post.id">
-          <img :src="post.media_url" alt="Post Image" class="post-image">
+          <template v-if="post.media_type === 'VIDEO'">
+            <video controls class="post-video">
+              <source :src="post.media_url" type="video/mp4">
+              Sorry, your browser doesn't support embedded videos.
+            </video>
+          </template>
+          <template v-else>
+            <img :src="post.media_url" alt="Post image" class="post-image">
+          </template>
           <p class="post-caption">{{ post.caption }}</p>
+          <p class="post-like-count">{{ post.like_count }}</p>
+          <p class="post-timestamp">{{ post.timestamp}}</p>
           <a :href="post.permalink" target="_blank" class="post-link">投稿を見る</a>
         </div>
       </div>
@@ -61,10 +71,8 @@ const fetchUserData = async (after: string | null = null) => {
     const { data: posts } = await useFetch<InstagramBusinessUserData>(url, {
       method: "GET",
     });
-    
     //afterがnullまたは空文字列の場合に、userDataを更新
     if(!after) {
-      console.log(posts.value);
       userData.value = posts.value;
     //nullまたは空文字列ではないときに、既存のuserDataに投稿データを追加
     } else {
@@ -112,9 +120,13 @@ watch(searchedUsername, (newValue, oldValue) => {
   box-sizing: border-box;
 }
 
-.post-image {
+.post-image,
+.post-video {
   max-width: 100%;
-  height: auto;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 5px; /* 画像と動画の角を丸める */
 }
 
 .post-caption {
@@ -128,5 +140,6 @@ watch(searchedUsername, (newValue, oldValue) => {
   text-decoration: none;
   color: #007bff;
 }
+
 </style>
  
