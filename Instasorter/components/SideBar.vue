@@ -1,10 +1,14 @@
 <template>
   <aside class="sidebar">
-    <button class="sidebar-button" @click="">ボタン1</button>
-    <button class="sidebar-button" @click="">ボタン2</button>
+    <button class="sidebar-button" @click="">古い順</button>
+    <button class="sidebar-button" @click="">新しい順</button>
     <!-- その他のボタンやサイドバーのコンテンツをここに追加 -->
   </aside>
 </template>
+
+<script setup lang="ts">
+
+</script>
 
 <style scoped>
 .sidebar {
