@@ -6,7 +6,7 @@
     </header>
     <div class="main-content">
       <aside class="sidebar">
-        <!-- ソートボタン配置場所　-->
+        <SideBar/>
       </aside>
       <main class="posts">
         <!-- 検索されたユーザーの投稿(コードをレンダリングさせる部分→app.vueでいうところのNuxtPageと同じ役割) -->
@@ -16,6 +16,16 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<style scoped>
+/* .main-content {
+  margin-left: 220px;
+}
 
-</script>
+.search-header {
+  margin-left: 220px;
+} */
+
+.container {
+  margin-left: 220px;
+}
+</style>
