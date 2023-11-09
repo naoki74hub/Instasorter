@@ -16,8 +16,18 @@
       <!-- ユーザーの投稿リスト -->
       <div class="user-posts">
         <div class="user-post" v-for="post in userData.business_discovery.media.data" :key="post.id">
-          <img :src="post.media_url" alt="Post Image" class="post-image">
+          <template v-if="post.media_type === 'VIDEO'">
+            <video controls class="post-video">
+              <source :src="post.media_url" type="video/mp4">
+              Sorry, your browser doesn't support embedded videos.
+            </video>
+          </template>
+          <template v-else>
+            <img :src="post.media_url" alt="Post image" class="post-image">
+          </template>
           <p class="post-caption">{{ post.caption }}</p>
+          <p class="post-like-count">{{ post.like_count }}</p>
+          <p class="post-timestamp">{{ post.timestamp}}</p>
           <a :href="post.permalink" target="_blank" class="post-link">投稿を見る</a>
         </div>
       </div>
@@ -31,35 +41,54 @@
 <script setup lang="ts">
 import type { InstagramBusinessUserData, MediaData } from "@/interfaces";
 //入力されたユーザー名を取得
-const searchedUsername = useState("username");
+const searchedUsername = useState<string>("username");
 const userData = ref<any>();
 const pending = ref(false);
 //次の投稿データを追跡
 let nextPostData = null;
 
-const fetchUserData = async (after: string = "") => {
+const fetchUserData = async (after: string | null = null) => {
   pending.value = true;
+
   try {
-    const { data: posts } = await useFetch<InstagramBusinessUserData>("/api/instagram", {
-      method: "POST",
-      body: { 
-              username: searchedUsername.value,
-              after: after 
-            }
+  //クエリパラメーター作成
+  const params: {
+    username: string;
+    after: string | null
+  } = 
+  {
+    username: searchedUsername.value,
+    after: after,
+  } 
+
+  const queryParams = new URLSearchParams();
+  queryParams.append("username", searchedUsername.value);
+  if(after !== null) {
+    queryParams.append("after", after);
+  }
+  const url = `/api/instagram?${queryParams.toString()}`
+ 
+    const { data: posts } = await useFetch<InstagramBusinessUserData>(url, {
+      method: "GET",
     });
+    //afterがnullまたは空文字列の場合に、userDataを更新
     if(!after) {
       userData.value = posts.value;
+    //nullまたは空文字列ではないときに、既存のuserDataに投稿データを追加
     } else {
       const newMediaData = posts.value?.business_discovery.media.data as MediaData[]
       //スプレッド構文を使用して、既存の配列に新しいデータの配列を1つずつプッシュ
       userData.value.business_discovery.media.data.push(...newMediaData);
     }
     //afterCursorを更新
-    nextPostData = posts.value?.business_discovery.media.paging.cursors?.after;
+    nextPostData = posts.value?.business_discovery.media.paging.cursors.after as string | null;
     
     if(nextPostData !== null) {
       //まだafterCursor(次の投稿データ)があれば、繰り返しリクエストする
       fetchUserData(nextPostData);
+      console.log(`投稿数: ${userData.value.business_discovery.media.data.length}`);
+    } else {
+      console.log("次の投稿情報はありません。取得処理を終了します");
     }
   } catch (error) {
     console.log("Errorです", error);
@@ -68,7 +97,8 @@ const fetchUserData = async (after: string = "") => {
   }
 }
 // 検索されたユーザー名が変更されたときにデータをフェッチする
-watch(searchedUsername, (newValue) => {
+watch(searchedUsername, (newValue, oldValue) => {
+  if(newValue !== oldValue)
   console.log(`New search: ${newValue}`);
   fetchUserData();
 });
@@ -90,9 +120,13 @@ watch(searchedUsername, (newValue) => {
   box-sizing: border-box;
 }
 
-.post-image {
+.post-image,
+.post-video {
   max-width: 100%;
-  height: auto;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 5px; /* 画像と動画の角を丸める */
 }
 
 .post-caption {
@@ -106,5 +140,6 @@ watch(searchedUsername, (newValue) => {
   text-decoration: none;
   color: #007bff;
 }
+
 </style>
  
